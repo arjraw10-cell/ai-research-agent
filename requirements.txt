@@ -1,0 +1,6 @@
+python-dotenv
+groq
+tavily-python
+requests
+firecrawl-py
+firecrawl
