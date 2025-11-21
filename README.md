@@ -4,8 +4,12 @@ Given a question, the agent:
 2. Summarizes findings using Groq
 3. Returns a concise, structured report
 
+Intial Setup:
+Create a new file ".env" with no name, only the file extension.
+Add your api keys as environment variable
+Use the .example if you need help
 
 How to Run
 ```powershell
-pip install -r requirements.txt
-python main.py "What is quantum computing?"
+py -m pip install -r requirements.txt
+py main.py

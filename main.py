@@ -6,7 +6,8 @@ def research_agent(query):
     search_results = web_search(query)
     top_url = search_results[0]["url"]
     content = scrape_url(top_url)
-    summary = run_llm(f"Summarize this:\n\n{content}")
+    summary = run_llm(f"Using this content:\n\n{content} \n\n Answer the user's question: {query} \n Cite the content in your response")
+    print(summary)
     return {
         "query": query,
         "url": top_url,
@@ -14,5 +15,5 @@ def research_agent(query):
     }
 
 if __name__ == "__main__":
-    resp = research_agent("What is quantum computing?")
-    print(resp)
+    query = input("What do you want to research? ")
+    research_agent(query)
