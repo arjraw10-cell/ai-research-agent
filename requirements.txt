@@ -4,3 +4,5 @@ tavily-python
 requests
 firecrawl-py
 firecrawl
+dotenv
+mcp
