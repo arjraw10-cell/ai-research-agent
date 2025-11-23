@@ -56,7 +56,6 @@ def truncate_content(content: str, max_chars: int = 5000) -> str:
     if len(content) <= max_chars:
         return content
     
-    # Truncate and add note
     truncated = content[:max_chars]
     return f"{truncated}\n\n[Content truncated - showing first {max_chars} characters of {len(content)} total]"
 
@@ -66,18 +65,14 @@ def limit_message_history(messages: list, max_messages: int = 15) -> list:
     if len(messages) <= max_messages:
         return messages
     
-    # Always keep system message (first message) if it exists
     system_msg = None
     if messages and isinstance(messages[0], dict) and messages[0].get("role") == "system":
         system_msg = messages[0]
     
-    # Keep the most recent messages (excluding system if we're keeping it separately)
     if system_msg:
-        # Keep system + recent messages (max_messages - 1 for system)
         recent_messages = messages[-(max_messages-1):]
         return [system_msg] + recent_messages
     else:
-        # No system message, just keep recent messages
         return messages[-max_messages:]
 
 
@@ -127,7 +122,6 @@ Use your judgment to determine when both tools would be helpful, but generally p
             for iteration in range(1, 11): 
                 print(f"\n--- Iteration {iteration} ---")
                 
-                # Limit message history before each API call
                 messages = limit_message_history(messages, max_messages=15)
 
                 response = groqLLM.chat.completions.create(
@@ -165,8 +159,6 @@ Use your judgment to determine when both tools would be helpful, but generally p
                     result = await session.call_tool(tool_name, tool_args)
                     result_str = extract_tool_result(result)
                     
-                    # Truncate large results to prevent token limit errors
-                    # Scrape results can be very large, so truncate more aggressively
                     max_chars = 5000 if tool_name == "scrape" else 8000
                     result_str = truncate_content(result_str, max_chars=max_chars)
                     
@@ -179,7 +171,6 @@ Use your judgment to determine when both tools would be helpful, but generally p
                     
                     print(f"📊 Result: {result_str[:150]}...")
                 
-                # Limit message history to prevent token overflow
                 messages = limit_message_history(messages, max_messages=15)
 
             print("\n⚠️ Reached max iterations")
