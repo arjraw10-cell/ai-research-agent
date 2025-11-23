@@ -1,5 +1,6 @@
 from firecrawl import FirecrawlApp
 import os
+import mcp
 from dotenv import load_dotenv
 
 load_dotenv();
@@ -11,7 +12,8 @@ if not FIRECRAWL_API_KEY:
 
 fc = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
-def scrape_url(url: str):
+def scrape(url: str):
+    """Scrapes the content off of a url"""
     result = fc.scrape(url)
     try:
         return result.markdown

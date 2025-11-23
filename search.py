@@ -1,6 +1,8 @@
 from tavily import TavilyClient
 import os
 from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
+
 
 load_dotenv();
 
@@ -13,13 +15,12 @@ if not TAVILY_API_KEY:
 
 tavily = TavilyClient(api_key = TAVILY_API_KEY)
 
-def web_search(query, max_results=5):
+def web_search(query: str):
     """
-    Returns structured internet search results.
+    Returns structured internet search results, including URLs.
     """
     result = tavily.search(
         query=query,
-        max_results=max_results
+        max_results=5
     )
-
     return result["results"]
