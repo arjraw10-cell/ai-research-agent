@@ -13,7 +13,6 @@ from jsonschema import validate, ValidationError, Draft7Validator
 load_dotenv()
 
 
-# JSON Schema for ReAct response format
 REACT_RESPONSE_SCHEMA = {
     "type": "object",
     "required": ["plan"],
@@ -125,7 +124,6 @@ class ToolRegistry:
                 "description": tool.description,
                 "inputSchema": tool.inputSchema
             }
-            # Store validator for each tool
             if tool.inputSchema:
                 try:
                     self.schemas[tool.name] = Draft7Validator(tool.inputSchema)
@@ -143,7 +141,7 @@ class ToolRegistry:
         
         validator = self.schemas.get(tool_name)
         if not validator:
-            return True, None  # No schema to validate against
+            return True, None
         
         try:
             validator.validate(arguments)
@@ -198,10 +196,8 @@ Return ONLY valid JSON, no explanation, no markdown, no code blocks."""
                     temperature=0.1,
                     max_tokens=2048
                 )
-                # Try to extract JSON
                 cleaned = response.strip()
                 if cleaned.startswith("```"):
-                    # Remove code blocks
                     cleaned = cleaned.split("```")[1]
                     if cleaned.startswith("json"):
                         cleaned = cleaned[4:]
@@ -278,10 +274,8 @@ IMPORTANT: If the user asks about current events, recent information, or anythin
     
     async def _validate_and_repair_response(self, response: str) -> Optional[Dict]:
         """Validate JSON response and attempt repair if needed."""
-        # Try to extract JSON from response
         cleaned = response.strip()
         
-        # Remove markdown code blocks if present
         if cleaned.startswith("```"):
             parts = cleaned.split("```")
             if len(parts) >= 3:
@@ -290,22 +284,18 @@ IMPORTANT: If the user asks about current events, recent information, or anythin
                     cleaned = cleaned[4:]
                 cleaned = cleaned.strip()
         
-        # Try to parse JSON
         try:
             parsed = json.loads(cleaned)
         except json.JSONDecodeError:
-            # Attempt repair
             self._emit_stream_event("llm_output", {"status": "repairing_invalid_json"})
             schema_desc = json.dumps(REACT_RESPONSE_SCHEMA, indent=2)
             parsed = await JSONRepair.repair_json(self.llm, cleaned, schema_desc)
             if not parsed:
                 return None
         
-        # Validate against schema
         try:
             validate(instance=parsed, schema=REACT_RESPONSE_SCHEMA)
         except ValidationError as e:
-            # Attempt repair
             self._emit_stream_event("llm_output", {"status": "repairing_schema_violation", "error": str(e)})
             schema_desc = json.dumps(REACT_RESPONSE_SCHEMA, indent=2)
             parsed = await JSONRepair.repair_json(self.llm, json.dumps(parsed), schema_desc)
@@ -320,22 +310,18 @@ IMPORTANT: If the user asks about current events, recent information, or anythin
     
     async def _execute_tool(self, tool_name: str, arguments: Dict) -> Tuple[bool, str]:
         """Execute a tool and return result."""
-        # Validate tool exists
         if tool_name not in self.tool_registry.tools:
             return False, f"Tool '{tool_name}' not found. Available: {list(self.tool_registry.tools.keys())}"
         
-        # Validate arguments
         valid, error = self.tool_registry.validate_arguments(tool_name, arguments)
         if not valid:
             return False, error
         
-        # Execute tool
         self._emit_stream_event("tool_start", {"tool": tool_name, "arguments": arguments})
         try:
             result = await self.session.call_tool(tool_name, arguments)
             result_str = self._extract_tool_result(result)
             
-            # Summarize if too large
             if len(result_str) > 3000:
                 self._emit_stream_event("tool_result", {"tool": tool_name, "status": "summarizing"})
                 result_str = await self._summarize_content(result_str)
@@ -393,7 +379,6 @@ Return ONLY a concise summary:"""
         """
         self.iteration += 1
         
-        # Initialize messages if first step
         if not self.messages:
             self.messages = [
                 {"role": "system", "content": self.system_prompt}
@@ -401,7 +386,6 @@ Return ONLY a concise summary:"""
             if query:
                 self.messages.append({"role": "user", "content": query})
         
-        # Generate response
         print(f"🤔 Generating response (iteration {self.iteration})...")
         self._emit_stream_event("llm_output", {"status": "generating"})
         
@@ -425,7 +409,6 @@ Return ONLY a concise summary:"""
             )
             print(f"📥 Raw JSON Response:\n{response}\n")
         
-        # Validate and parse response
         parsed = await self._validate_and_repair_response(response)
         if not parsed:
             print("❌ Invalid JSON response received")
@@ -433,7 +416,6 @@ Return ONLY a concise summary:"""
             self.messages.append({"role": "user", "content": error_msg})
             return None, True
         
-        # Print parsed response sections
         print("\n📋 Parsed Response:")
         if "plan" in parsed and parsed.get("plan"):
             print(f"  PLAN: {parsed['plan']}")
@@ -445,18 +427,15 @@ Return ONLY a concise summary:"""
         if "final_answer" in parsed and parsed.get("final_answer"):
             print(f"  FINAL_ANSWER: {parsed['final_answer']}")
         
-        # Add response to messages
         self.messages.append({
             "role": "assistant",
             "content": json.dumps(parsed, indent=2)
         })
         
-        # Check for final answer
         if "final_answer" in parsed and parsed["final_answer"]:
             self._emit_stream_event("final_answer", {"answer": parsed["final_answer"]})
             return parsed["final_answer"], False
         
-        # Execute action if present
         if "action" in parsed and parsed["action"]:
             action = parsed["action"]
             tool_name = action.get("tool")
@@ -465,7 +444,6 @@ Return ONLY a concise summary:"""
             success, result = await self._execute_tool(tool_name, tool_args)
             
             if not success:
-                # Tool execution failed
                 print(f"❌ Tool execution failed: {result}")
                 self.messages.append({
                     "role": "user",
@@ -473,17 +451,14 @@ Return ONLY a concise summary:"""
                 })
                 return None, True
             
-            # Print tool result preview
             result_preview = result[:300] if len(result) > 300 else result
             print(f"📊 Tool Result Preview: {result_preview}...")
             
-            # Add tool result to messages
             self.messages.append({
                 "role": "user",
                 "content": f"Tool '{tool_name}' result:\n{result}"
             })
             
-            # Prompt for reflection if not present
             if "reflection" not in parsed or not parsed.get("reflection"):
                 print("💭 No reflection provided, prompting for one...")
                 self.messages.append({
@@ -518,7 +493,7 @@ async def create_agent(
     
     if llm is None:
         groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        llm = LLMClient(groq_client, "llama-3.1-8b-instant")
+        llm = LLMClient(groq_client, "meta-llama/llama-4-scout-17b-16e-instruct")
     
     params = StdioServerParameters(
         command=server_command,
