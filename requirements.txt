@@ -1,9 +1,7 @@
-python-dotenv
+gradio
 groq
-tavily-python
-requests
-firecrawl-py
-firecrawl
-dotenv
 mcp
-jsonschema
+python-dotenv
+tavily-python
+firecrawl
+firecrawl-py
