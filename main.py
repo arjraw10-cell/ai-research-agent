@@ -60,6 +60,7 @@ class MCPClient:
         tools = response.tools
         print("\nConnected to server with tools:", [tool.name for tool in tools])
 
+    #Main Message Processor
     async def _process_query(self, message: str, history: List[Union[Dict[str, Any], ChatMessage]]):
         result_messages = history.copy()
         result_messages.append({"role": "user", "content": message})
@@ -129,6 +130,8 @@ class MCPClient:
         """Run an interactive chat loop"""
         print("\nMCP Client Started!")
         print("Type your queries or 'quit' to exit.")
+
+        #System Prompt, Change if needed
         history = [
             {
                 "role": "system",
@@ -141,6 +144,8 @@ class MCPClient:
                 CRITICAL: When calling tools, you MUST provide ALL required parameters. Check the tool schema to see which parameters are required."""
             }
         ]
+
+        #loop of Messags
         while True:
             try:
                 query = input("\nQuery: ").strip()
@@ -150,7 +155,7 @@ class MCPClient:
                 print("\n\n History:")
                 print(history)
             except Exception as e:
-                raise Exception(e)
+                print(e)
 
     async def cleanup(self):
         """Clean up resources"""
