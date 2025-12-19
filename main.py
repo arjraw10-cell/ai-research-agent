@@ -145,7 +145,7 @@ class MCPClient:
             }
         ]
 
-        #loop of Messags
+        #loop of Messages
         while True:
             try:
                 query = input("\nQuery: ").strip()
